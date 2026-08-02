@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 import gspread
-from google.auth import default
+from google.oauth2.service_account import Credentials as ServiceAccountCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +28,17 @@ def ensure_google_credentials() -> None:
 
 def get_google_sheet():
     ensure_google_credentials()
-    credentials, _ = default()
-    client = gspread.authorize(credentials)
+    creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if not creds_path:
+        raise RuntimeError("Google credentials not configured. Set GOOGLE_APPLICATION_CREDENTIALS to service account JSON path.")
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    creds = ServiceAccountCredentials.from_service_account_file(creds_path, scopes=scopes)
+    client = gspread.authorize(creds)
 
     spreadsheet_id = get_spreadsheet_id()
     sheet_name = get_sheet_name()
