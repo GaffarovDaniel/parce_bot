@@ -48,6 +48,15 @@ def run_scrape_pipeline(job_id: str, keyword: str, pages: int) -> None:
         duplicates_count = len(rows_to_append) - new_count
         max_score = max(scores) if scores else 0
 
+        if rows_to_append and new_count == 0:
+            if duplicates_count == len(rows_to_append):
+                tracker.update_job(job_id, last_message="No new rows appended: all scraped suppliers already exist")
+            else:
+                tracker.update_job(
+                    job_id,
+                    last_message="No rows appended to Google Sheets; verify sheet name, service account access, and sheet tab name",
+                )
+
         logger.info(
             "Append results: new_count=%d duplicates=%d max_score=%d",
             new_count,

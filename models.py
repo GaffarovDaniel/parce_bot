@@ -25,7 +25,7 @@ class JobStatusResponse(BaseModel):
     duplicates_count: int | None = None
     max_score: int | None = None
     error: str | None = None
-    events: list[str] = []
+    events: list[str] = Field(default_factory=list)
 
     @classmethod
     def from_job(cls, job: "JobStatus") -> "JobStatusResponse":

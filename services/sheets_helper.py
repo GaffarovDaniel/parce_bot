@@ -1,20 +1,41 @@
 import logging
 import os
+from pathlib import Path
 
 import gspread
 from google.auth import default
 
 logger = logging.getLogger(__name__)
 
-SPREADSHEET_ID = "1xWqzhmDh3694QgQj50OU1e9MXTO0fdw1"
-SHEET_NAME = "Поставщики"
+
+def get_spreadsheet_id() -> str:
+    return os.getenv("SPREADSHEET_ID", "1xWqzhmDh3694QgQj50OU1e9MXTO0fdw1")
+
+
+def get_sheet_name() -> str:
+    return os.getenv("SHEET_NAME", "Поставщики")
+
+
+def ensure_google_credentials() -> None:
+    if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        return
+
+    credentials_path = Path(__file__).resolve().parents[1] / "credentials.json"
+    if credentials_path.exists():
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(credentials_path)
+        logger.info("Using local Google credentials file %s", credentials_path)
 
 
 def get_google_sheet():
+    ensure_google_credentials()
     credentials, _ = default()
     client = gspread.authorize(credentials)
-    spreadsheet = client.open_by_key(SPREADSHEET_ID)
-    return spreadsheet.worksheet(SHEET_NAME)
+
+    spreadsheet_id = get_spreadsheet_id()
+    sheet_name = get_sheet_name()
+
+    spreadsheet = client.open_by_key(spreadsheet_id)
+    return spreadsheet.worksheet(sheet_name)
 
 
 def append_unique_suppliers(rows: list[list[str]]) -> int:

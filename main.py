@@ -2,6 +2,8 @@ import logging
 import uuid
 
 from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 
 from models import JobStatusResponse, ScrapeRequest, ScrapeResponse
