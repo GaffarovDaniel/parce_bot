@@ -43,11 +43,7 @@ def append_unique_suppliers(rows: list[list[str]]) -> int:
         logger.info("No rows to append to Google Sheet")
         return 0
 
-    try:
-        worksheet = get_google_sheet()
-    except Exception as exc:
-        logger.exception("Failed to authorize Google Sheets: %s", exc)
-        return 0
+    worksheet = get_google_sheet()
 
     existing_links = set()
     try:
@@ -73,6 +69,6 @@ def append_unique_suppliers(rows: list[list[str]]) -> int:
         logger.info("Appended %d rows to Google Sheet", len(unique_rows))
     except Exception as exc:
         logger.exception("Failed to append rows to Google Sheet: %s", exc)
-        return 0
+        raise RuntimeError("Failed to append rows to Google Sheets") from exc
 
     return len(unique_rows)

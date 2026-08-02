@@ -44,7 +44,14 @@ def run_scrape_pipeline(job_id: str, keyword: str, pages: int) -> None:
             ]
             rows_to_append.append(row)
 
-        new_count = append_unique_suppliers(rows_to_append)
+        try:
+            new_count = append_unique_suppliers(rows_to_append)
+        except Exception as exc:
+            logger.exception("Google Sheets append failed for job_id=%s: %s", job_id, exc)
+            tracker.fail_job(job_id, f"Google Sheets error: {exc}")
+            send_telegram_report(keyword, 0, 0, 0, error=str(exc))
+            return
+
         duplicates_count = len(rows_to_append) - new_count
         max_score = max(scores) if scores else 0
 

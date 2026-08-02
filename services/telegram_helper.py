@@ -6,20 +6,27 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def send_telegram_report(keyword: str, new_count: int, duplicates_count: int, max_score: int) -> None:
+def send_telegram_report(keyword: str, new_count: int, duplicates_count: int, max_score: int, error: str | None = None) -> None:
     bot_token = os.getenv("BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
     if not bot_token or not chat_id:
         logger.warning("Telegram credentials are not configured")
         return
 
-    message = (
-        "✅ *Парсинг завершен!*\n"
-        f"Ключевое слово: `{keyword}`\n"
-        f"Найдено новых поставщиков: `{new_count}`\n"
-        f"Дубликатов: `{duplicates_count}`\n"
-        f"Лучший Score: `{max_score}`"
-    )
+    if error:
+        message = (
+            "⚠️ *Парсинг завершился с ошибкой!*\n"
+            f"Ключевое слово: `{keyword}`\n"
+            f"Ошибка: `{error}`\n"
+        )
+    else:
+        message = (
+            "✅ *Парсинг завершен!*\n"
+            f"Ключевое слово: `{keyword}`\n"
+            f"Найдено новых поставщиков: `{new_count}`\n"
+            f"Дубликатов: `{duplicates_count}`\n"
+            f"Лучший Score: `{max_score}`"
+        )
 
     try:
         response = requests.post(
