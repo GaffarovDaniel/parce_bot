@@ -29,27 +29,25 @@ def scrape_made_in_china(keyword: str, pages: int) -> list[dict[str, str]]:
             continue
 
         soup = BeautifulSoup(response.text, "html.parser")
-        for company_heading in soup.select("h2.company-name"):
-            company_name = company_heading.get_text(" ", strip=True)
+        for product_card in soup.select("div.prod-info"):
+            product_name_tag = product_card.select_one("h2.product-name")
+            company_link_tag = product_card.select_one(".company-name-txt a")
+            product_detail_tag = product_card.select_one("a.product-detail")
+
+            company_name = company_link_tag.get_text(" ", strip=True) if company_link_tag else ""
             if not company_name:
                 continue
 
-            card = company_heading.find_parent(["div", "li", "article", "section"])
-            if card is None:
-                card = company_heading.parent
-
-            product_block = card.select_one("div.product-list") if card else None
-            products_text = product_block.get_text(" ", strip=True) if product_block else ""
+            products_text_parts = []
+            if product_name_tag:
+                products_text_parts.append(product_name_tag.get_text(" ", strip=True))
+            if product_detail_tag:
+                products_text_parts.append(product_detail_tag.get_text(" ", strip=True))
+            products_text = " | ".join(p for p in products_text_parts if p)
 
             profile_link = ""
-            for link in card.find_all("a", href=True) if card else []:
-                href = link.get("href", "")
-                if href.startswith("http"):
-                    profile_link = href
-                    break
-                if "/company/" in href or "/company" in href:
-                    profile_link = urljoin(url, href)
-                    break
+            if company_link_tag and company_link_tag.get("href"):
+                profile_link = company_link_tag["href"].strip()
 
             suppliers.append(
                 {
