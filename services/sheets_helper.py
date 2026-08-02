@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_spreadsheet_id() -> str:
-    return os.getenv("SPREADSHEET_ID", "1xWqzhmDh3694QgQj50OU1e9MXTO0fdw1")
+    return os.getenv("SPREADSHEET_ID", "1Bn_hEvkF4I0jhBsVEKIwBiI8E8bEK5OO")
 
 
 def get_sheet_name() -> str:

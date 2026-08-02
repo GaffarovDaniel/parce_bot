@@ -10,8 +10,6 @@ from models import JobStatusResponse, ScrapeRequest, ScrapeResponse
 from services.pipeline import run_scrape_pipeline
 from services.status_tracker import tracker
 
-load_dotenv()
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
