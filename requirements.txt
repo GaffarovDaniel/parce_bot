@@ -1,0 +1,9 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.4
+python-dotenv==1.0.1
+requests==2.32.2
+beautifulsoup4==4.12.2
+gspread==6.0.2
+google-auth==2.8.0
+google-genai==1.0.0
