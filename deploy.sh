@@ -14,8 +14,8 @@ if [ "$LOCAL" != "$REMOTE" ]; then
     git pull origin main
 
     # Обновляем образы и запускаем контейнеры через Docker Compose
-    docker compose pull
-    docker compose up -d --build
+    docker-compose pull
+    docker-compose up -d --build
 
     echo "Деплой успешно завершен!"
 else
