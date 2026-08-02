@@ -2,6 +2,7 @@ import logging
 import os
 
 import requests
+from services.db_clickhouse import fetch_suppliers_csv
 
 logger = logging.getLogger(__name__)
 
@@ -44,3 +45,42 @@ def send_telegram_report(keyword: str, new_count: int, duplicates_count: int, ma
                 exc.response.text,
             )
         logger.exception("Telegram notification failed: %s", exc)
+
+
+def send_suppliers_csv_via_telegram(chat_id: str | None = None, limit: int | None = None) -> bool:
+    """
+    Fetch suppliers CSV from ClickHouse and send it to Telegram chat as a file.
+    Returns True if sent successfully.
+    """
+    bot_token = os.getenv("BOT_TOKEN")
+    chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID")
+    if not bot_token or not chat_id:
+        logger.warning("Telegram credentials are not configured for CSV export")
+        return False
+
+    try:
+        csv_bytes = fetch_suppliers_csv(limit=limit)
+    except Exception as exc:
+        logger.exception("Failed to fetch CSV from ClickHouse: %s", exc)
+        return False
+
+    files = {"document": ("suppliers.csv", csv_bytes, "text/csv")}
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{bot_token}/sendDocument",
+            data={"chat_id": chat_id},
+            files=files,
+            timeout=60,
+        )
+        response.raise_for_status()
+        logger.info("Telegram CSV sent, response=%s", response.text)
+        return True
+    except requests.RequestException as exc:
+        if hasattr(exc, 'response') and exc.response is not None:
+            logger.error(
+                "Telegram sendDocument response code=%s text=%s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+        logger.exception("Telegram sendDocument failed: %s", exc)
+        return False

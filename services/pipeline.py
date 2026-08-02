@@ -4,6 +4,7 @@ from services.ai_helper import categorize_products_with_gemini
 from services.scraper import scrape_made_in_china
 from services.scoring import calculate_supplier_score
 from services.sheets_helper import append_unique_suppliers
+from services.db_clickhouse import insert_suppliers
 from services.status_tracker import tracker
 from services.telegram_helper import send_telegram_report
 
@@ -44,13 +45,26 @@ def run_scrape_pipeline(job_id: str, keyword: str, pages: int) -> None:
             ]
             rows_to_append.append(row)
 
+        # Primary storage: ClickHouse
+        try:
+            db_new = insert_suppliers(rows_to_append)
+            logger.info("Inserted %d rows into ClickHouse", db_new)
+        except Exception as exc:
+            logger.exception("ClickHouse insert failed for job_id=%s: %s", job_id, exc)
+            tracker.fail_job(job_id, f"ClickHouse error: {exc}")
+            send_telegram_report(keyword, 0, 0, 0, error=str(exc))
+            return
+
+        # Secondary / optional: Google Sheets sync (best-effort)
         try:
             new_count = append_unique_suppliers(rows_to_append)
         except Exception as exc:
             logger.exception("Google Sheets append failed for job_id=%s: %s", job_id, exc)
-            tracker.fail_job(job_id, f"Google Sheets error: {exc}")
+            # do not fail the job, data is persisted in ClickHouse
+            tracker.update_job(job_id, last_message=f"Google Sheets error: {exc}")
             send_telegram_report(keyword, 0, 0, 0, error=str(exc))
-            return
+            # continue — we already have data in ClickHouse
+            new_count = 0
 
         duplicates_count = len(rows_to_append) - new_count
         max_score = max(scores) if scores else 0

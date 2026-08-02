@@ -9,6 +9,10 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException
 from models import JobStatusResponse, ScrapeRequest, ScrapeResponse
 from services.pipeline import run_scrape_pipeline
 from services.status_tracker import tracker
+from services.db_clickhouse import fetch_suppliers_csv
+from services.telegram_helper import send_suppliers_csv_via_telegram
+from fastapi.responses import StreamingResponse
+import io
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -46,3 +50,21 @@ def get_job_status(job_id: str) -> JobStatusResponse:
 @app.get("/api/v1/status", response_model=list[JobStatusResponse])
 def list_job_statuses() -> list[JobStatusResponse]:
     return [JobStatusResponse.from_job(job) for job in tracker.list_jobs()]
+
+
+@app.get("/api/v1/suppliers")
+def export_suppliers(format: str = "csv", send_telegram: bool = False, limit: int | None = None):
+    if format != "csv":
+        raise HTTPException(status_code=400, detail="Only csv format is supported")
+    try:
+        csv_bytes = fetch_suppliers_csv(limit=limit)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    if send_telegram:
+        try:
+            send_suppliers_csv_via_telegram(limit=limit)
+        except Exception:
+            pass
+
+    return StreamingResponse(io.BytesIO(csv_bytes), media_type="text/csv", headers={"Content-Disposition": "attachment; filename= suppliers.csv"})
