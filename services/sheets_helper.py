@@ -19,13 +19,20 @@ def get_google_sheet():
 
 def append_unique_suppliers(rows: list[list[str]]) -> int:
     if not rows:
+        logger.info("No rows to append to Google Sheet")
         return 0
 
-    worksheet = get_google_sheet()
+    try:
+        worksheet = get_google_sheet()
+    except Exception as exc:
+        logger.exception("Failed to authorize Google Sheets: %s", exc)
+        return 0
+
     existing_links = set()
     try:
         values = worksheet.col_values(4)
         existing_links = {value.strip() for value in values[1:] if value.strip()}
+        logger.info("Loaded %d existing contacts from Google Sheet", len(existing_links))
     except Exception as exc:
         logger.warning("Could not fetch existing sheet links: %s", exc)
 
@@ -36,6 +43,15 @@ def append_unique_suppliers(rows: list[list[str]]) -> int:
             continue
         unique_rows.append(row)
 
-    if unique_rows:
+    if not unique_rows:
+        logger.info("No unique rows to append after de-duplication")
+        return 0
+
+    try:
         worksheet.append_rows(unique_rows, value_input_option="USER_ENTERED")
+        logger.info("Appended %d rows to Google Sheet", len(unique_rows))
+    except Exception as exc:
+        logger.exception("Failed to append rows to Google Sheet: %s", exc)
+        return 0
+
     return len(unique_rows)

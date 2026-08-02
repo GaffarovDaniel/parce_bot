@@ -28,5 +28,12 @@ def send_telegram_report(keyword: str, new_count: int, duplicates_count: int, ma
             timeout=20,
         )
         response.raise_for_status()
+        logger.info("Telegram notification sent, response=%s", response.text)
     except requests.RequestException as exc:
+        if hasattr(exc, 'response') and exc.response is not None:
+            logger.error(
+                "Telegram response code=%s text=%s",
+                exc.response.status_code,
+                exc.response.text,
+            )
         logger.exception("Telegram notification failed: %s", exc)
